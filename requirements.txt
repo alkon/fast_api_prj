@@ -1,0 +1,6 @@
+fastapi
+pydantic
+sqlalchemy
+uvicorn  # If you use it for running the app
+pytest   # For testing
+httpx    # For making test requests
