@@ -1,8 +1,13 @@
 import pytest
+import httpx
+
 from sqlalchemy import create_engine, Integer, String, Column
 from sqlalchemy.orm import sessionmaker, Session
 
-from main import Base
+from main import Base, app
+
+# Import TestClient
+from fastapi.testclient import TestClient
 
 TEST_DATABASE_URL = "sqlite:///:memory:"
 
@@ -76,4 +81,42 @@ def test_dynamic_db_interaction(test_session, test_engine): # test_session and t
     assert retrieved_item.id is not None
 
     DynamicTable.__table__.drop(bind=test_engine)  # Drop table using test_engine
+
+def test_create_item(test_session):
+    client = TestClient(app) # Use TestClient
+    response = client.post("/items/", json={"name": "Test Item", "description": "Test Description"})
+    assert response.status_code == 201
+    data = response.json()
+    assert data["name"] == "Test Item"
+
+def test_read_items(test_session):
+    client = TestClient(app) # Use TestClient
+    response = client.get("/items/")
+    assert response.status_code == 200
+    assert isinstance(response.json(), list)
+
+def test_read_item(test_session):
+    client = TestClient(app) # Use TestClient
+    #First create an item.
+    response = client.post("/items/", json={"name": "Test Item", "description": "Test Description"})
+    created_item = response.json()
+    item_id = created_item['id']
+
+    response = client.get(f"/items/{item_id}")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["name"] == "Test Item"
+
+def test_read_single_item_not_found(test_session):
+    """
+    Tests the /items/{item_id} endpoint with an invalid item_id.
+    """
+    client = TestClient(app) # Use TestClient
+    # Attempt to retrieve an item with a non-existent ID:
+    read_response = client.get("/items/999999") #very high id that should not exist.
+    assert read_response.status_code == 404
+    assert read_response.json() == {"detail": "Item not found"}
+
+
+
 

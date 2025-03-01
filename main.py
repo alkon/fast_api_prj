@@ -38,7 +38,7 @@ def get_db():
 
 @app.post("/items/", status_code=201)
 def create_item(item: ItemCreate, db: Session = Depends(get_db)):
-    db_item = Item(**item.dict())
+    db_item = Item(**item.model_dump())
     db.add(db_item)
     db.commit()
     db.refresh(db_item)
